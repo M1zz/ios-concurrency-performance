@@ -6,6 +6,21 @@
     <title>iOS 동시성 & 성능 최적화</title>
     <style>
         :root {
+            --bg: #ffffff;
+            --card: #f6f8fa;
+            --border: #d0d7de;
+            --text: #1f2328;
+            --muted: #656d76;
+            --accent: #0969da;
+            --green: #1a7f37;
+            --orange: #9a6700;
+            --purple: #8250df;
+            --bad: #cf222e;
+            --tag-concurrency-bg: rgba(9,105,218,0.1);
+            --tag-rendering-bg: rgba(130,80,223,0.1);
+            --tag-combine-bg: rgba(26,127,55,0.1);
+        }
+        [data-theme="dark"] {
             --bg: #0d1117;
             --card: #161b22;
             --border: #30363d;
@@ -15,6 +30,10 @@
             --green: #3fb950;
             --orange: #d29922;
             --purple: #bc8cff;
+            --bad: #f85149;
+            --tag-concurrency-bg: rgba(88,166,255,0.15);
+            --tag-rendering-bg: rgba(188,140,255,0.15);
+            --tag-combine-bg: rgba(63,185,80,0.15);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -22,15 +41,30 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
+            transition: background 0.3s, color 0.3s;
         }
         .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
-        header { text-align: center; margin-bottom: 3rem; }
+        header { text-align: center; margin-bottom: 3rem; position: relative; }
         header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
         header p { color: var(--muted); font-size: 1.1rem; }
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            transition: border-color 0.2s, background 0.3s;
+        }
+        .theme-toggle:hover { border-color: var(--accent); }
         .badge {
             display: inline-block;
             background: var(--accent);
-            color: var(--bg);
+            color: #ffffff;
             padding: 0.2rem 0.7rem;
             border-radius: 12px;
             font-size: 0.85rem;
@@ -50,7 +84,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1.2rem;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, background 0.3s;
         }
         .card:hover { border-color: var(--accent); }
         .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
@@ -63,9 +97,9 @@
             margin-top: 0.5rem;
             margin-right: 0.3rem;
         }
-        .tag-concurrency { background: rgba(88,166,255,0.15); color: var(--accent); }
-        .tag-rendering { background: rgba(188,140,255,0.15); color: var(--purple); }
-        .tag-combine { background: rgba(63,185,80,0.15); color: var(--green); }
+        .tag-concurrency { background: var(--tag-concurrency-bg); color: var(--accent); }
+        .tag-rendering { background: var(--tag-rendering-bg); color: var(--purple); }
+        .tag-combine { background: var(--tag-combine-bg); color: var(--green); }
         .code-block {
             background: var(--card);
             border: 1px solid var(--border);
@@ -73,9 +107,10 @@
             padding: 1.2rem;
             overflow-x: auto;
             margin-bottom: 1rem;
+            transition: background 0.3s;
         }
         .code-block pre { font-family: 'SF Mono', Menlo, monospace; font-size: 0.85rem; }
-        .bad { color: #f85149; }
+        .bad { color: var(--bad); }
         .good { color: var(--green); }
         .checklist { list-style: none; }
         .checklist li { padding: 0.4rem 0; color: var(--muted); }
@@ -83,11 +118,29 @@
         footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0d1117;
+                --card: #161b22;
+                --border: #30363d;
+                --text: #e6edf3;
+                --muted: #8b949e;
+                --accent: #58a6ff;
+                --green: #3fb950;
+                --orange: #d29922;
+                --purple: #bc8cff;
+                --bad: #f85149;
+                --tag-concurrency-bg: rgba(88,166,255,0.15);
+                --tag-rendering-bg: rgba(188,140,255,0.15);
+                --tag-combine-bg: rgba(63,185,80,0.15);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">🌙</button>
             <span class="badge">STAGE 6</span>
             <h1>iOS 동시성 & 성능 최적화</h1>
             <p>부드럽고 빠른 앱을 만드는 데 필요한 동시성, 렌더링 최적화, Combine 학습 레포</p>
@@ -176,5 +229,42 @@ let image = downsample(imageAt: url, to: CGSize(width: 100, height: 100))</pre>
             <p>개발자리 · 10년차 iOS 개발자의 실험일지</p>
         </footer>
     </div>
+    <script>
+        (function() {
+            var toggle = document.getElementById('themeToggle');
+            var root = document.documentElement;
+
+            function getEffectiveTheme(pref) {
+                if (pref === 'dark' || pref === 'light') return pref;
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            function applyTheme(pref) {
+                var theme = getEffectiveTheme(pref);
+                if (pref === 'dark' || pref === 'light') {
+                    root.setAttribute('data-theme', pref);
+                } else {
+                    root.removeAttribute('data-theme');
+                }
+                toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+
+            var saved = localStorage.getItem('theme');
+            applyTheme(saved || 'system');
+
+            toggle.addEventListener('click', function() {
+                var current = localStorage.getItem('theme') || 'system';
+                var effective = getEffectiveTheme(current);
+                var next = effective === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', next);
+                applyTheme(next);
+            });
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+                var pref = localStorage.getItem('theme');
+                if (!pref || pref === 'system') applyTheme('system');
+            });
+        })();
+    </script>
 </body>
 </html>
