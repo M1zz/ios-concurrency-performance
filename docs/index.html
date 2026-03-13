@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS 동시성 & 성능 최적화</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --orange: #d29922;
+            --purple: #bc8cff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+        header { text-align: center; margin-bottom: 3rem; }
+        header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        header p { color: var(--muted); font-size: 1.1rem; }
+        .badge {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--bg);
+            padding: 0.2rem 0.7rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .section { margin-bottom: 2.5rem; }
+        .section h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem;
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: var(--accent); }
+        .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .card p { color: var(--muted); font-size: 0.9rem; }
+        .tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            margin-right: 0.3rem;
+        }
+        .tag-concurrency { background: rgba(88,166,255,0.15); color: var(--accent); }
+        .tag-rendering { background: rgba(188,140,255,0.15); color: var(--purple); }
+        .tag-combine { background: rgba(63,185,80,0.15); color: var(--green); }
+        .code-block {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+        .code-block pre { font-family: 'SF Mono', Menlo, monospace; font-size: 0.85rem; }
+        .bad { color: #f85149; }
+        .good { color: var(--green); }
+        .checklist { list-style: none; }
+        .checklist li { padding: 0.4rem 0; color: var(--muted); }
+        .checklist li::before { content: '✓ '; color: var(--green); font-weight: bold; }
+        footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="badge">STAGE 6</span>
+            <h1>iOS 동시성 & 성능 최적화</h1>
+            <p>부드럽고 빠른 앱을 만드는 데 필요한 동시성, 렌더링 최적화, Combine 학습 레포</p>
+            <p style="margin-top: 1rem;">
+                <a href="https://github.com/M1zz/ios-concurrency-performance">GitHub Repository</a>
+            </p>
+        </header>
+
+        <div class="section">
+            <h2>학습 주제</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>01. Thread Basics</h3>
+                    <p>Process vs Thread, RunLoop, Race Condition</p>
+                    <span class="tag tag-concurrency">동시성</span>
+                </div>
+                <div class="card">
+                    <h3>02. GCD</h3>
+                    <p>DispatchQueue, sync/async, serial/concurrent, DispatchGroup, Semaphore</p>
+                    <span class="tag tag-concurrency">동시성</span>
+                </div>
+                <div class="card">
+                    <h3>03. async/await</h3>
+                    <p>async/await, Task, async let, withCheckedContinuation</p>
+                    <span class="tag tag-concurrency">동시성</span>
+                </div>
+                <div class="card">
+                    <h3>04. Actor</h3>
+                    <p>Actor, MainActor, Sendable — 컴파일러 수준 Data Race 방지</p>
+                    <span class="tag tag-concurrency">동시성</span>
+                </div>
+                <div class="card">
+                    <h3>05. Rendering</h3>
+                    <p>SwiftUI diff, Equatable, identity/lifetime/dependency</p>
+                    <span class="tag tag-rendering">렌더링</span>
+                </div>
+                <div class="card">
+                    <h3>06. Image Optimization</h3>
+                    <p>ImageIO 다운샘플링 (48MB → 0.04MB), NSCache, Prefetching</p>
+                    <span class="tag tag-rendering">렌더링</span>
+                </div>
+                <div class="card">
+                    <h3>07. Combine</h3>
+                    <p>Publisher, Subscriber, debounce, combineLatest, flatMap</p>
+                    <span class="tag tag-combine">Combine</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Before / After</h2>
+            <div class="code-block">
+                <pre><span class="bad">// ❌ Before — 퍼플 경고, 크래시 가능</span>
+URLSession.shared.dataTask(with: url) { data, _, _ in
+    self.imageView.image = UIImage(data: data!) <span class="bad">// 백그라운드 스레드!</span>
+}.resume()
+
+<span class="good">// ✅ After — async/await + @MainActor</span>
+func loadImage() async throws {
+    let (data, _) = try await URLSession.shared.data(from: url)
+    await MainActor.run {
+        self.imageView.image = UIImage(data: data)
+    }
+}</pre>
+            </div>
+            <div class="code-block">
+                <pre><span class="bad">// ❌ Before — 48MB</span>
+let image = UIImage(data: try! Data(contentsOf: url))
+
+<span class="good">// ✅ After — 0.04MB (1200배 절약)</span>
+let image = downsample(imageAt: url, to: CGSize(width: 100, height: 100))</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>이 단계를 마치면</h2>
+            <ul class="checklist">
+                <li>async/await로 비동기 코드를 동기처럼 작성할 수 있다</li>
+                <li>Actor로 Data Race를 컴파일러 수준에서 방지한다</li>
+                <li>ImageIO로 이미지 메모리를 1200배 줄일 수 있다</li>
+                <li>Combine으로 복잡한 이벤트 흐름을 선언적으로 처리한다</li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>개발자리 · 10년차 iOS 개발자의 실험일지</p>
+        </footer>
+    </div>
+</body>
+</html>
